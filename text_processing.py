@@ -12,14 +12,12 @@ class TextProcessingError(Exception):
 
 
 async def read_and_validate_file_content(
-        file: Any,
-        max_size_bytes: int,
-        chunk_size_bytes: int
+    file: Any, max_size_bytes: int, chunk_size_bytes: int
 ) -> bytes:
     file_contents_buffer = io.BytesIO()
     total_bytes_read = 0
 
-    if hasattr(file, 'chunks'):
+    if hasattr(file, "chunks"):
         async for chunk in file.chunks(chunk_size_bytes):
             total_bytes_read += len(chunk)
             if total_bytes_read > max_size_bytes:
@@ -71,8 +69,7 @@ def decode_text_content(contents_bytes: bytes) -> str:
 
 
 def calculate_tfidf_and_get_top_words(
-        text_content: str,
-        n_rows: int = N_ROWS_DEFAULT
+    text_content: str, n_rows: int = N_ROWS_DEFAULT
 ) -> List[Dict[str, Any]]:
     try:
         vectorizer = TfidfVectorizer()
@@ -109,12 +106,14 @@ def calculate_tfidf_and_get_top_words(
 
 
 async def process_uploaded_file_logic(
-        file: Any,
-        max_size_bytes: int,
-        chunk_size_bytes: int,
-        n_rows_output: int = N_ROWS_DEFAULT
+    file: Any,
+    max_size_bytes: int,
+    chunk_size_bytes: int,
+    n_rows_output: int = N_ROWS_DEFAULT,
 ) -> List[Dict[str, Any]]:
-    contents_bytes = await read_and_validate_file_content(file, max_size_bytes, chunk_size_bytes)
+    contents_bytes = await read_and_validate_file_content(
+        file, max_size_bytes, chunk_size_bytes
+    )
     text_content = decode_text_content(contents_bytes)
     results = calculate_tfidf_and_get_top_words(text_content, n_rows_output)
     return results

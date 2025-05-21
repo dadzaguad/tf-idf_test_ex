@@ -4,7 +4,7 @@ from typing import List, Dict, Any
 import traceback
 
 
-from text_processing import process_uploaded_file_logic, TextProcessingError 
+from text_processing import process_uploaded_file_logic, TextProcessingError
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -29,18 +29,16 @@ async def process_file_endpoint(request: Request, file: UploadFile = File(...)):
 
     try:
         results_for_template = await process_uploaded_file_logic(
-            file,
-            MAX_FILE_SIZE_BYTES,
-            CHUNK_SIZE_BYTES,
-            N_ROWS_OUTPUT
+            file, MAX_FILE_SIZE_BYTES, CHUNK_SIZE_BYTES, N_ROWS_OUTPUT
         )
     except TextProcessingError as tpe:
         error_message = str(tpe)
     except Exception as e:
         traceback.print_exc()
-        error_message = "Произошла внутренняя ошибка сервера при обработке вашего запроса."
+        error_message = (
+            "Произошла внутренняя ошибка сервера при обработке вашего запроса."
+        )
         results_for_template = []
-
 
     return templates.TemplateResponse(
         "index.html",
