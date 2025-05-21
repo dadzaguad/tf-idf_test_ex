@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анализатор текста TF-IDF</title>
+    <style>
+        /* Глобальный сброс и базовые стили */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            line-height: 1.6;
+            background-color: #f4f7f6; /* Очень светлый серо-зеленый фон */
+            color: #333;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Чтобы контейнер был сверху, если контента мало */
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            margin-top: 30px;
+            margin-bottom: 30px;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 12px; /* Более скругленные углы */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); /* Более выраженная тень */
+        }
+
+        h1, h2 {
+            color: #2c3e50; /* Темно-сине-серый */
+            margin-bottom: 1rem;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+        }
+        h2 {
+            font-size: 1.5rem;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        /* Форма */
+        form {
+            margin-bottom: 2rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600; /* Немного жирнее */
+            color: #555;
+        }
+
+        input[type="file"] {
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background-color: #fdfdfd;
+            font-size: 1rem;
+        }
+         input[type="file"]::file-selector-button { /* Стилизация кнопки внутри input file */
+            padding: 0.6rem 1rem;
+            margin-right: 1rem;
+            background-color: #5dade2; /* Светло-синий */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        input[type="file"]::file-selector-button:hover {
+            background-color: #3498db;
+        }
+
+
+        button[type="submit"] {
+            display: inline-block;
+            background-color: #3498db; /* Яркий синий */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #2980b9; /* Темнее при наведении */
+        }
+        button[type="submit"]:active {
+            transform: translateY(1px); /* Небольшой эффект нажатия */
+        }
+
+        /* Сообщения */
+        .message {
+            padding: 0.8rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+            border: 1px solid transparent;
+        }
+        .error {
+            color: #c0392b; /* Более насыщенный красный */
+            background-color: #fdedec;
+            border-color: #f5b7b1;
+        }
+
+        .file-info {
+            color: #2e86c1;
+            background-color: #eaf2f8;
+            border-color: #aed6f1;
+            font-style: normal; /* Убрал курсив, сделал обычным блоком */
+        }
+        .file-info strong {
+            color: #1b4f72;
+        }
+
+        /* Таблица */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+            border-radius: 8px; /* Скругление для всей таблицы */
+            overflow: hidden; /* Чтобы скругление работало с фоном ячеек */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        th, td {
+            padding: 0.9rem 1rem; /* Увеличенные отступы */
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background-color: #34495e; /* Темно-сине-серый для заголовков */
+            color: #ffffff;
+            font-weight: 600;
+            text-transform: uppercase; /* Заголовки капсом */
+            letter-spacing: 0.5px;
+        }
+        th:first-child { border-top-left-radius: 8px; } /* Скругление углов заголовка */
+        th:last-child { border-top-right-radius: 8px; }
+
+
+        tr:nth-child(even) td { /* Только для td, чтобы не перекрывать фон th */
+            background-color: #f8f9fa; /* Очень легкое чередование строк */
+        }
+        tr:last-child td {
+            border-bottom: none; /* Убрать границу у последней строки */
+        }
+        tr:last-child td:first-child { border-bottom-left-radius: 8px; } /* Скругление нижних углов */
+        tr:last-child td:last-child { border-bottom-right-radius: 8px; }
+
+        tr:hover td { /* Подсветка всей строки (кроме заголовка) */
+            background-color: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Анализатор Текста: TF-IDF</h1>
+
+        <form method="post" enctype="multipart/form-data">
+            <div>
+                <label for="file">Выберите текстовый файл (UTF-8 или CP1251):</label>
+                <input type="file" name="file" id="file" accept=".txt" required>
+            </div>
+            <button type="submit">Обработать</button>
+        </form>
+
+        {% if error_message %}
+            <p class="message error">{{ error_message }}</p>
+        {% endif %}
+
+        {% if results %}
+            <div class="message file-info">
+                Обработан файл: <strong>{{ filename }}</strong>
+            </div>
+            <h2>Топ-{{ results|length }} слов по IDF</h2> {# Динамически покажем сколько слов в таблице #}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Слово</th>
+                        <th>TF (доля)</th>
+                        <th>IDF</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in results %}
+                    <tr>
+                        <td>{{ item.word }}</td>
+                        <td>{{ "%.4f" | format(item.tf) }}</td>
+                        <td>{{ "%.4f" | format(item.idf) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+</body>
+</html>
